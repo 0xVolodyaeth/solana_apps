@@ -11,7 +11,7 @@ use solana_program::{
 /// Defines the structure of the state stored in the on-chain account
 #[derive(BorshSerialize, BorshDeserialize, Debug, Clone, BorshSchema)]
 pub struct GreetingStruct {
-    pub counter: u64,
+    pub counter: u32,
 }
 
 entrypoint!(process_instruction);
@@ -31,12 +31,16 @@ pub fn process_instruction(
     let account = next_account_info(accounts_iter)?;
 
     // The account must be owned by the program in order to modify its data
-    if account.owner != program_id {
-        msg!("Greeted account does not have the correct program id");
-        return Err(ProgramError::IncorrectProgramId);
-    }
+    // if account.owner != program_id {
+    //     msg!("Greeted account does not have the correct program id");
+    //     return Err(ProgramError::IncorrectProgramId);
+    // }
 
     // Increment and store the number of times the account has been greeted
+
+    msg!("{:?}", account);
+    msg!("{:?}", account.data);
+
     let mut greeting_account = GreetingStruct::try_from_slice(&account.data.borrow())?;
     greeting_account.counter += 1;
     greeting_account.serialize(&mut &mut account.data.borrow_mut()[..])?;

@@ -23,7 +23,7 @@ import { Key } from "mz/readline";
 
 
 const ACCOUNT_KEYPAIR_PATH = path.join(__dirname, "../account.json");
-const programId = new PublicKey("Y5AFf5ZL4Xv59CjQzQ1eyP4m9KniwqGYdRhwh3VVfqr");
+const programId = new PublicKey("9AoPaBe7fF28ew33bWQjvqcPZ1zVDbrrrztRURZn3KKL");
 
 
 class GreetingAccount {
@@ -115,6 +115,7 @@ async function createAccountIfNotExists(connection: Connection, greetedkeypair: 
 async function sayHello(connection: Connection, greetedkeypair: Keypair, programId: PublicKey, payer: Keypair) {
 	console.log('Saying hello to', greetedkeypair.publicKey.toBase58());
 	console.log('Program id :', programId.toBase58());
+
 	const instruction = new TransactionInstruction({
 		keys: [{ pubkey: greetedkeypair.publicKey, isSigner: false, isWritable: true }],
 		programId,
