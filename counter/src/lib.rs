@@ -24,24 +24,24 @@ pub fn process_instruction(
 ) -> ProgramResult {
     msg!("Hello World Rust program entrypoint");
 
-    // // Iterating accounts is safer than indexing
-    // let accounts_iter = &mut accounts.iter();
+    // Iterating accounts is safer than indexing
+    let accounts_iter = &mut accounts.iter();
 
-    // // Get the account to say hello to
-    // let account = next_account_info(accounts_iter)?;
+    // Get the account to say hello to
+    let account = next_account_info(accounts_iter)?;
 
-    // // The account must be owned by the program in order to modify its data
-    // if account.owner != program_id {
-    //     msg!("Greeted account does not have the correct program id");
-    //     return Err(ProgramError::IncorrectProgramId);
-    // }
+    // The account must be owned by the program in order to modify its data
+    if account.owner != program_id {
+        msg!("Greeted account does not have the correct program id");
+        return Err(ProgramError::IncorrectProgramId);
+    }
 
-    // // Increment and store the number of times the account has been greeted
-    // let mut greeting_account = GreetingStruct::try_from_slice(&account.data.borrow())?;
-    // greeting_account.counter += 1;
-    // greeting_account.serialize(&mut &mut account.data.borrow_mut()[..])?;
+    // Increment and store the number of times the account has been greeted
+    let mut greeting_account = GreetingStruct::try_from_slice(&account.data.borrow())?;
+    greeting_account.counter += 1;
+    greeting_account.serialize(&mut &mut account.data.borrow_mut()[..])?;
 
-    // msg!("Greeted {} time(s)!", greeting_account.counter);
+    msg!("Greeted {} time(s)!", greeting_account.counter);
 
     Ok(())
 }

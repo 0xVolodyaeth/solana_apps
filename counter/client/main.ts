@@ -23,8 +23,7 @@ import { Key } from "mz/readline";
 
 
 const ACCOUNT_KEYPAIR_PATH = path.join(__dirname, "../account.json");
-const programId = new PublicKey("CJgDjvcnzvVp6ijfv7HpfzDpgSQxcie84WZDfQKPcz8M");
-// const programId = new PublicKey("YTX7KRV6YKHcSaGN1hegPHZjn9Z8FiszKmPG8GkuaFB");
+const programId = new PublicKey("Y5AFf5ZL4Xv59CjQzQ1eyP4m9KniwqGYdRhwh3VVfqr");
 
 
 class GreetingAccount {
