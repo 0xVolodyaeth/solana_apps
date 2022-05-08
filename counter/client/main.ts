@@ -18,6 +18,13 @@ import {
 	getBalance,
 	establishEnoughSol,
 } from "../utils/utils";
+import { writeFile, existsSync, readFileSync } from "fs";
+import { Key } from "mz/readline";
+
+
+const ACCOUNT_KEYPAIR_PATH = path.join(__dirname, "../account.json");
+const programId = new PublicKey("CJgDjvcnzvVp6ijfv7HpfzDpgSQxcie84WZDfQKPcz8M");
+// const programId = new PublicKey("YTX7KRV6YKHcSaGN1hegPHZjn9Z8FiszKmPG8GkuaFB");
 
 
 class GreetingAccount {
@@ -30,20 +37,53 @@ class GreetingAccount {
 }
 
 (async () => {
-	const programId = new PublicKey("C4SjjwjtepuJNM2YnfXngHug6EzM47N3pyBkZWRqtTyG");
+	const connection: Connection = await establishConnection();
 
-
-	let connection: Connection = await establishConnection();
+	const isProgramDeployed = await connection.getAccountInfo(programId);
+	if (!isProgramDeployed) {
+		console.error("you should deploye the program");
+	}
 
 	let payer: Keypair = await getPayer();
 	let greetedkeypair = Keypair.generate();
-	console.log("account is created " + greetedkeypair.publicKey);
 
+	if (existsSync(ACCOUNT_KEYPAIR_PATH)) {
+		const key = readFileSync(ACCOUNT_KEYPAIR_PATH);
+		console.log(key)
+		greetedkeypair = Keypair.fromSecretKey(key);
+	} else {
+		console.log("New account, creating....");
+		writeAccountKeypair(greetedkeypair);
+		createAccountIfNotExists(connection, greetedkeypair, payer, programId);
+	}
 
+	console.log("\nusing the following account keypair");
+	console.log(greetedkeypair.publicKey.toString());
+	console.log()
 
-	const accountInfo = await connection.getAccountInfo(programId);
-	console.log("is deployed : ", accountInfo != null)
+	const accountInfoCreated = await connection.getAccountInfo(greetedkeypair.publicKey);
+	console.log("account info that just created: ", accountInfoCreated);
+	console.log("account info: ", accountInfoCreated?.data);
 
+	const GreetingSchema = new Map([
+		[GreetingAccount, { kind: "struct", fields: [["counter", "u32"]] }],
+	]);
+
+	let buf: Buffer;
+	if (accountInfoCreated?.data != undefined) {
+		buf = accountInfoCreated.data
+		const newValue = borsh.deserialize(GreetingSchema, GreetingAccount, buf);
+		console.log();
+		console.log("new value: ", newValue);
+	}
+
+	console.log();
+	console.log("saying hello ...");
+	console.log();
+	await sayHello(connection, greetedkeypair, programId, payer);
+})();
+
+async function createAccountIfNotExists(connection: Connection, greetedkeypair: Keypair, payer: Keypair, programId: PublicKey) {
 	const GreetingSchema = new Map([
 		[GreetingAccount, { kind: "struct", fields: [["counter", "u32"]] }],
 	]);
@@ -55,7 +95,6 @@ class GreetingAccount {
 
 	const lamports = await connection.getMinimumBalanceForRentExemption(GREETING_SIZE);
 
-	console.log(lamports);
 	const txInstruction = SystemProgram.createAccount({
 		fromPubkey: payer.publicKey,
 		newAccountPubkey: greetedkeypair.publicKey,
@@ -64,21 +103,36 @@ class GreetingAccount {
 		programId: programId,
 	})
 
+	console.log();
+	console.log("the following account will pay");
 	console.log("payer: ", payer.publicKey.toBase58());
+	console.log();
 
 	const transaction = new Transaction().add(txInstruction);
 	await sendAndConfirmTransaction(connection, transaction, [payer, greetedkeypair]);
+	return;
+}
 
-	const accountInfoCreated = await connection.getAccountInfo(greetedkeypair.publicKey);
-	console.log("account info that just created: ", accountInfoCreated);
+async function sayHello(connection: Connection, greetedkeypair: Keypair, programId: PublicKey, payer: Keypair) {
+	console.log('Saying hello to', greetedkeypair.publicKey.toBase58());
+	console.log('Program id :', programId.toBase58());
+	const instruction = new TransactionInstruction({
+		keys: [{ pubkey: greetedkeypair.publicKey, isSigner: false, isWritable: true }],
+		programId,
+		data: Buffer.alloc(0), // All instructions are hellos
+	});
+	await sendAndConfirmTransaction(
+		connection,
+		new Transaction().add(instruction),
+		[payer]
+	);
+}
 
-	console.log("account info: ", accountInfoCreated?.data);
-
-	let buf: Buffer;
-	if (accountInfoCreated?.data != undefined) {
-		buf = accountInfoCreated.data
-		const newValue = borsh.deserialize(GreetingSchema, GreetingAccount, buf);
-		console.log();
-		console.log("new value: ", newValue);
-	}
-})();
+function writeAccountKeypair(keypair: Keypair) {
+	const buf = Uint8Array.from(keypair.secretKey);
+	writeFile(ACCOUNT_KEYPAIR_PATH, buf, (err) => {
+		if (err) {
+			console.log("error writing account keypair", err);
+		}
+	});
+}
