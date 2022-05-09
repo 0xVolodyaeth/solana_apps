@@ -1,3 +1,6 @@
 counter/target/
 counter/node_modules/
 counter/test-ledger/
+counter_with_pda/target/
+counter_with_pda/node_modules/
+counter_with_pda/test-ledger/
