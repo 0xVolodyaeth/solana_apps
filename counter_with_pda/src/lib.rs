@@ -6,10 +6,12 @@ use solana_program::{
     entrypoint::ProgramResult,
     msg,
     program::invoke_signed,
+    // program::token_instruction,
     program_error::ProgramError,
     pubkey::Pubkey,
     rent::Rent,
 };
+use spl_token::instruction::transfer;
 use std::str::from_utf8;
 
 /// Defines the structure of the state stored in the on-chain account
@@ -68,6 +70,10 @@ pub fn process_instruction(
         msg!("[instruction] extracted account size: {:?}", account_size);
         let lamports = Rent::default().minimum_balance(account_size as usize);
 
+        // let word = WordStruct {
+        //     word: String::from("default"),
+        // };
+
         let ix = solana_program::system_instruction::create_account(
             funder.key,
             account_to_init.key,
@@ -110,8 +116,6 @@ pub fn process_instruction(
             msg!("Word account has the correct program id");
         }
 
-        //
-
         // create struct from data under account using the template
         let mut word_account = try_from_slice_unchecked::<WordStruct>(&account.data.borrow())?;
 
@@ -127,6 +131,13 @@ pub fn process_instruction(
         word_account.serialize(&mut &mut account.data.borrow_mut()[..])?;
 
         msg!("Serialisation to PDA successful");
+    }
+    if 2 == *function_flag {
+        let escrow_pubkey2 = next_account_info(accounts_iter);
+        let alice_pubkey = next_account_info(accounts_iter);
+
+        let instruction = token_instruction::transfer(&escrow_pubkey2, &alice_pubkey, 1);
+        invoke_signed(&instruction, accounts, &[&[b"escrow"]])?
     }
 
     // The account must be owned by the program in order to modify its data
