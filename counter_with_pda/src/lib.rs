@@ -10,6 +10,7 @@ use solana_program::{
     program_error::ProgramError,
     pubkey::Pubkey,
     rent::Rent,
+    CustomError,
 };
 use spl_token::instruction::transfer;
 use std::str::from_utf8;
@@ -132,30 +133,29 @@ pub fn process_instruction(
 
         msg!("Serialisation to PDA successful");
     }
-    if 2 == *function_flag {
-        let escrow_pubkey2 = next_account_info(accounts_iter);
-        let alice_pubkey = next_account_info(accounts_iter);
 
-        let instruction = token_instruction::transfer(&escrow_pubkey2, &alice_pubkey, 1);
-        invoke_signed(&instruction, accounts, &[&[b"escrow"]])?
-    }
+    // if 2 == *function_flag {
+    //     let escrow_pubkey2 = next_account_info(accounts_iter);
+    //     let alice_pubkey = next_account_info(accounts_iter);
 
-    // The account must be owned by the program in order to modify its data
-    // if account.owner != program_id {
-    //     msg!("Greeted account does not have the correct program id");
-    //     return Err(ProgramError::IncorrectProgramId);
+    //     let instruction = token_instruction::transfer(&escrow_pubkey2, &alice_pubkey, 1);
+    //     invoke_signed(&instruction, accounts, &[&[b"escrow"]])?
     // }
 
-    // // Increment and store the number of times the account has been greeted
+    Ok(())
+}
 
-    // msg!("{:?}", account);
-    // msg!("{:?}", account.data);
-
-    // let mut greeting_account = GreetingStruct::try_from_slice(&account.data.borrow())?;
-    // greeting_account.counter += 1;
-    // greeting_account.serialize(&mut &mut account.data.borrow_mut()[..])?;
-
-    // msg!("Greeted {} time(s)!", greeting_account.counter);
-
+fn transfer_service_fee_lamports(
+    from_account: &AccountInfo,
+    to_account: &AccountInfo,
+    amount_of_lamports: u64,
+) -> ProgramResult {
+    // Does the from account have enough lamports to transfer?
+    if **from_account.try_borrow_lamports()? < amount_of_lamports {
+        return Err(CustomError::InsufficientFundsForTransaction.into());
+    }
+    // Debit from_account and credit to_account
+    **from_account.try_borrow_mut_lamports()? -= amount_of_lamports;
+    **to_account.try_borrow_mut_lamports()? += amount_of_lamports;
     Ok(())
 }

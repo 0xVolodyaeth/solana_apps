@@ -44,100 +44,115 @@ class GreetingAccount {
 	let seed = "escrow";
 	let seedBuffer = Buffer.from(seed);
 
-	// const [theAccountToInit, bump] = await PublicKey.findProgramAddress(
-	// 	[seedBuffer],
-	// 	programId
-	// );
+	const [theAccountToInit, bump] = await PublicKey.findProgramAddress(
+		[seedBuffer],
+		programId
+	);
 
-	// console.log("inited account : ", theAccountToInit.toBase58());
+	console.log("inited account : ", theAccountToInit.toBase58());
 
-	// var instruction_set = Buffer.concat([
-	// 	Buffer.alloc(1, 0), // creating PDA
-	// 	Buffer.alloc(1, seed.length), // size of the seed (it varies)
-	// 	Buffer.from(seed), // seed buffer
-	// 	Buffer.alloc(1, bump), // bump integer
-	// 	Buffer.alloc(1, 100), // acount size
-	// ]);
-	// console.log(instruction_set);
+	var instruction_set = Buffer.concat([
+		Buffer.alloc(1, 0), // creating PDA
+		Buffer.alloc(1, seed.length), // size of the seed (it varies)
+		Buffer.from(seed), // seed buffer
+		Buffer.alloc(1, bump), // bump integer
+		Buffer.alloc(1, 100), // acount size
+	]);
+	console.log(instruction_set);
 
 
-	// const instruction = new TransactionInstruction({
-	// 	keys: [
-	// 		{ pubkey: payer.publicKey, isSigner: true, isWritable: true }, // first key payer
-	// 		{ pubkey: theAccountToInit, isSigner: false, isWritable: true },
-	// 		{
-	// 			pubkey: SystemProgram.programId,
-	// 			isSigner: false,
-	// 			isWritable: false,
-	// 		},
-	// 	],
-	// 	programId,
-	// 	data: instruction_set,
-	// });
+	const instruction = new TransactionInstruction({
+		keys: [
+			{ pubkey: payer.publicKey, isSigner: true, isWritable: true }, // first key payer
+			{ pubkey: theAccountToInit, isSigner: false, isWritable: true },
+			{
+				pubkey: SystemProgram.programId,
+				isSigner: false,
+				isWritable: false,
+			},
+		],
+		programId,
+		data: instruction_set,
+	});
 
-	// await sendAndConfirmTransaction(
-	// 	connection,
-	// 	new Transaction().add(instruction),
-	// 	[payer]
-	// );
+	await sendAndConfirmTransaction(
+		connection,
+		new Transaction().add(instruction),
+		[payer]
+	);
 
-	//  pub fn unpack(input: &[u8]) -> Result<Self, ProgramError> {
-	// // split into first element and the rest [element], [element array]
-	// let split = input.split_first();
 
-	// msg!("[instruction] Total payload: {:?}", input);
+	console.log("write to pda")
+	console.log()
+	console.log()
+	console.log()
 
-	// // process option  type
-	// let (function_flag, rest) = split.ok_or(ProgramError::BorshIoError(
-	//     "Invalid parameters passed".to_string(),
-	// ))?;
 
-	// msg!("[instruction] Received function flag: {}", function_flag);
 
-	// // length of the string is fixed so it will be X first characters
-	// let (key_length, rest) = rest.split_first().ok_or(ProgramError::BorshIoError(
-	//     "Invalid parameters passed".to_string(),
-	// ))?;
 
-	// // process function type
-	// match function_flag {
-	//     0 => {
-	//         msg!("[instruction] Initialising PDA");
 
-	//         // Get seed from up to the key size as a string
-	//         let seed = from_utf8(rest.get(..*key_length as usize).unwrap())
-	//             .unwrap()
-	//             .to_string();
 
-	//         msg!("[instruction] extracted seed: {:?}", seed);
 
-	//         // Get bump
-	//         let bump = *rest.get(*key_length as usize).unwrap();
+	const [theAccountToWriteTo, _] = await PublicKey.findProgramAddress(
+		[seedBuffer],
+		programId
+	);
 
-	//         msg!("[instruction] extracted bump: {:?}", bump);
+	console.log("account to write to : ", theAccountToWriteTo.toBase58());
 
-	//         // Get account size in bytes
-	//         let account_size = *rest.last().unwrap();
+	const word = "test nasty code";
+	var instruction_set = Buffer.concat([
+		Buffer.alloc(1, 1), // writing PDA
+		Buffer.alloc(1, word.length), // size of the seed (it varies)
+		Buffer.from(word)
+	]);
+	console.log(instruction_set);
 
-	//         msg!("[instruction] extracted account size: {:?}", account_size);
 
-	//         Ok(Self::PDA_create {
-	//             seed,
-	//             bump,
-	//             account_size,
-	//         }) // needs seed and bump
-	//     }
+	const instructionWrite = new TransactionInstruction({
+		programId: programId,
+		keys: [
+			{ pubkey: theAccountToWriteTo, isSigner: false, isWritable: true },
+			{ pubkey: payer.publicKey, isSigner: true, isWritable: true }, // first key payer
+		],
+		data: instruction_set,
+	});
 
-	// console.log("write to pda")
+	await sendAndConfirmTransaction(
+		connection,
+		new Transaction().add(instructionWrite),
+		[payer]
+	);
+
+
+
+
+	console.log("read pda")
+	console.log()
+	console.log()
+	console.log()
+
+	const WordSchema = new Map([
+		[WordAccount, { kind: "struct", fields: [["word", "string"]] }],
+	]);
+
+	const accountInfo = await connection.getAccountInfo(theAccountToWriteTo);
+	if (accountInfo != null) {
+		const word_acc = borsh.deserializeUnchecked(
+			WordSchema,
+			WordAccount,
+			accountInfo.data
+		);
+
+		console.log(`written to account : ${word_acc.word}`);
+	}
+
+
+
+	// console.log("send lamports to escrow contract")
 	// console.log()
 	// console.log()
 	// console.log()
-
-
-
-
-
-
 
 	// const [theAccountToWriteTo, _] = await PublicKey.findProgramAddress(
 	// 	[seedBuffer],
@@ -153,67 +168,6 @@ class GreetingAccount {
 	// 	Buffer.from(word)
 	// ]);
 	// console.log(instruction_set);
-
-
-	// const instructionWrite = new TransactionInstruction({
-	// 	programId: programId,
-	// 	keys: [
-	// 		{ pubkey: theAccountToWriteTo, isSigner: false, isWritable: true },
-	// 		{ pubkey: payer.publicKey, isSigner: true, isWritable: true }, // first key payer
-	// 	],
-	// 	data: instruction_set,
-	// });
-
-	// await sendAndConfirmTransaction(
-	// 	connection,
-	// 	new Transaction().add(instructionWrite),
-	// 	[payer]
-	// );
-
-
-
-
-	// console.log("read pda")
-	// console.log()
-	// console.log()
-	// console.log()
-
-	// const WordSchema = new Map([
-	// 	[WordAccount, { kind: "struct", fields: [["word", "string"]] }],
-	// ]);
-
-	// const accountInfo = await connection.getAccountInfo(theAccountToWriteTo);
-	// if (accountInfo != null) {
-	// 	const word_acc = borsh.deserializeUnchecked(
-	// 		WordSchema,
-	// 		WordAccount,
-	// 		accountInfo.data
-	// 	);
-
-	// 	console.log(`written to account : ${word_acc.word}`);
-	// }
-
-
-
-	console.log("send lamports to escrow contract")
-	console.log()
-	console.log()
-	console.log()
-
-	const [theAccountToWriteTo, _] = await PublicKey.findProgramAddress(
-		[seedBuffer],
-		programId
-	);
-
-	console.log("account to write to : ", theAccountToWriteTo.toBase58());
-
-	const word = "anal sex";
-	var instruction_set = Buffer.concat([
-		Buffer.alloc(1, 1), // writing PDA
-		Buffer.alloc(1, word.length), // size of the seed (it varies)
-		Buffer.from(word)
-	]);
-	console.log(instruction_set);
 
 
 })();
